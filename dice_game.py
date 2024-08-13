@@ -260,7 +260,7 @@ class Player :
         if not len(self.DiceList) : return
         self.DiceList.pop()
         if not len(self.DiceList) :
-            self.LastBet ="---"
+            #self.LastBet ="---"
             self.BetTurn = g.GameTurns
             self.FinishedRank = g.getNumActivePlayers()+1
             for pl in g.PlayerList :
@@ -326,7 +326,7 @@ class Player :
         # Check if previous bet qty is not possible:
         if g.LastBetQty > estNumPMax : return "block"
 
-        # See which would be my bet and now many there could be of it
+        # See which would be my bet and how many there could be of it
         g.CurrBetVal = self.mostDiceVals()
         g.CurrBetQty = (g.getRemainingDiceNum() - len(self.DiceList)) // 3
         betCeiling :int = g.getRemainingDiceNum() - len(self.DiceList)
@@ -337,11 +337,16 @@ class Player :
         # See if it is rather safe to raise the bet
         betQtyAdder: int = 1 if g.CurrBetVal <= g.LastBetVal else 0
         if g.CurrBetQty >= g.LastBetQty + betQtyAdder + self.SafePlayer:
-            g.CurrBetQty = max(g.LastBetQty + betQtyAdder, 1)
-            if g.CurrBetQty > betCeiling :
+            SafeBetQty = max(g.LastBetQty + betQtyAdder, 1)
+            if SafeBetQty > betCeiling :
                 g.CurrBetQty = -1
                 return "block"
             else :
+                # This is the randomizer between the safe and the calculated bet qty:
+                if SafeBetQty < g.CurrBetQty :
+                    g.CurrBetQty = random.randint(SafeBetQty,g.CurrBetQty)
+                else :
+                    g.CurrBetQty = SafeBetQty
                 return str(g.CurrBetQty)+" "+str(g.CurrBetVal)
 
         # See how safe it is to block
@@ -349,17 +354,23 @@ class Player :
 
         # Check raise without safety :
         if g.CurrBetQty >= g.LastBetQty + betQtyAdder:
-            g.CurrBetQty = max(g.LastBetQty + betQtyAdder, 1)
-            if g.CurrBetQty > betCeiling :
+            SafeBetQty = max(g.LastBetQty + betQtyAdder, 1)
+            if SafeBetQty > betCeiling :
                 g.CurrBetQty = -1
                 return "block"
             else :
+                # This is the randomizer between the safe and the calculated bet qty:
+                if SafeBetQty < g.CurrBetQty :
+                    g.CurrBetQty = random.randint(SafeBetQty,g.CurrBetQty)
+                else :
+                    g.CurrBetQty = SafeBetQty
                 return str(g.CurrBetQty)+" "+str(g.CurrBetVal)
 
         # Check block without safety :
         if estNumP <= g.LastBetQty : return "block"
 
         # Give up.... Raise, hoping that next player does not block
+        # No randomizer here, as the minimal possible step in qty needs to be made
         g.CurrBetQty = max(g.LastBetQty + betQtyAdder, 1)
         if g.CurrBetQty > betCeiling:
             g.CurrBetQty = -1
